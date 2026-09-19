@@ -1,0 +1,8 @@
+Patient Name: Maria Garcia
+MRN: 55220198
+Date of Birth - 4-12-68
+SSN: 123-45-6789
+Contact: maria.garcia@example.com, +1 555.123.4567 or (555) 765-4321.
+Emergency contact reachable at 555-000-1111.
+
+HPI: Reports cough and fever for 3 days.

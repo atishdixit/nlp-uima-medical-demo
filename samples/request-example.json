@@ -1,0 +1,5 @@
+{
+  "text": "Chief Complaint: cough.\nHPI: Patient denies fever but reports cough. BP 120/80, HR 72. Started metformin 500 mg BID. MRN: 12345678",
+  "redactPhi": true,
+  "includeSentences": true
+}

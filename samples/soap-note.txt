@@ -1,0 +1,27 @@
+Patient: John A. Smith
+MRN: 84736251
+DOB: 04/12/1968
+Phone: (555) 123-4567
+
+Chief Complaint: Chest pain and shortness of breath for 2 days.
+
+HPI: 57-year-old male with a history of hypertension and type 2 diabetes mellitus presents with chest pain.
+He denies fever, cough or headache but reports nausea. Pneumonia was ruled out by chest x-ray.
+
+PMH: Hypertension, hyperlipidemia, COPD.
+
+Medications:
+- Metformin 500 mg BID
+- Lisinopril 10 mg PO daily
+- Atorvastatin 40 mg daily
+
+Allergies: No known drug allergies.
+
+Family History: Mother with diabetes. Father had MI at age 60.
+
+Vitals: BP 148/92 mmHg, HR 88, RR 18, Temp 98.6, SpO2 97%
+
+Labs: Glucose 182 mg/dL, HbA1c 8.1%, Troponin 0.01 ng/mL, Creatinine 1.1 mg/dL
+
+Assessment: Uncontrolled type 2 diabetes mellitus and hypertension. Myocardial infarction unlikely.
+Plan: Increase metformin. No evidence of pneumonia. Follow-up call 555-987-6543.

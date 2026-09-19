@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <name>MedicalTypeSystem</name>
+    <description>Annotation types produced by the medical chart pipeline. JCas classes are generated
+        from this file by jcasgen-maven-plugin into com.example.mednlp.types.</description>
+    <version>1.0</version>
+    <vendor>nlp-uima-medical-demo</vendor>
+    <types>
+        <typeDescription>
+            <name>com.example.mednlp.types.ChartSection</name>
+            <description>A chart section (HPI, MEDICATIONS, PLAN ...) from its header to the next header.</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>name</name>
+                    <description>Section identifier, e.g. HISTORY_OF_PRESENT_ILLNESS</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>experiencer</name>
+                    <description>PATIENT or FAMILY - who the findings in this section refer to</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>com.example.mednlp.types.ChartSentence</name>
+            <description>A sentence / clause; the scope boundary for negation.</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+        </typeDescription>
+
+        <typeDescription>
+            <name>com.example.mednlp.types.ClinicalConcept</name>
+            <description>A medical concept found via trigger terms and mapped to a vocabulary code.</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>code</name>
+                    <description>Vocabulary code, e.g. E11.9</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>codeSystem</name>
+                    <description>ICD10CM, RXNORM or LOINC</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>preferredName</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>category</name>
+                    <description>DIAGNOSIS, SYMPTOM, MEDICATION or LAB</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>negated</name>
+                    <rangeTypeName>uima.cas.Boolean</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>negationTrigger</name>
+                    <description>The trigger phrase that negated this concept, if any</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>experiencer</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>sectionName</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>com.example.mednlp.types.PhiSpan</name>
+            <description>Protected health information (MRN, SSN, phone, e-mail, DOB, patient name).</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>phiType</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>com.example.mednlp.types.Measurement</name>
+            <description>A vital sign, lab value or dosage extracted by a regex rule.</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>measurementType</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>value</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>unit</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>ruleName</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+    </types>
+</typeSystemDescription>

@@ -1,0 +1,8 @@
+# "h2" profile: in-memory H2 in MySQL compatibility mode. No database install needed.
+# Used by the automated tests and by `run.bat h2` for a zero-infrastructure demo.
+# Data is lost on restart; every context gets its own randomly named database.
+spring:
+  datasource:
+    url: jdbc:h2:mem:mednlp-${random.uuid};MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:

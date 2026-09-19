@@ -1,0 +1,10 @@
+Assessment: Patient denies chest pain.
+No fever, cough or headache.
+Denies shortness of breath but has chest pain.
+Pneumonia was ruled out.
+No increase in cough.
+Not certain about pneumonia.
+Pneumonia is not ruled out.
+Denies fever. Cough is present.
+Troponin was negative.
+Patient is not taking metformin.

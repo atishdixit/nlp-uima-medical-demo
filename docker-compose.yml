@@ -1,0 +1,26 @@
+# Local MySQL for the demo. Credentials are DEMO-ONLY; change them for anything shared.
+# Override the host port if 3306 is taken:  set MYSQL_PORT=3307  (then run the app with the same variable)
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mednlp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mednlp}
+      MYSQL_USER: ${MYSQL_USER:-mednlp}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-mednlp}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mednlp-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+volumes:
+  mednlp-mysql-data:

@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: nlp-uima-medical-demo
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:mednlp}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+    username: ${MYSQL_USER:mednlp}
+    password: ${MYSQL_PASSWORD:mednlp}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # schema is owned by Flyway; Hibernate only verifies it
+  flyway:
+    enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+mednlp:
+  pool-size: 4                    # UIMA engines are not thread-safe: one engine + CAS per concurrent request
+  pool-borrow-timeout-ms: 5000    # wait for a free engine before answering 503
+  max-chars: 1000000              # larger charts are rejected with 413
+  negation-window-tokens: 6       # max tokens between a negation trigger and the concept it negates
+  regex-timeout-ms: 2000          # per rule, per document - guards against catastrophic backtracking
+  rule-cache-ttl: PT5M            # rules are re-read from MySQL in the background after this (stale-while-refresh)
+  audit-enabled: true             # store counts/timings (never text) in processing_run
+  seed-enabled: true              # load seed/medical-rules.json into empty rule tables at startup
