@@ -3,7 +3,7 @@
 A small, production-shaped demo that turns a free-text medical chart into structured findings using **one Apache UIMA
 pipeline** (typed **JCas** annotations) served by a **Spring Boot 3 / Java 21** REST API. Every rule the pipeline uses
 (regexes, trigger terms, vocabulary codes, negation triggers) is stored in **MySQL**, so behaviour changes by editing
-rows, with no redeploy.
+rows, with no redeploy. An **Angular web UI** lets you edit a chart, analyze it and inspect every finding in the browser.
 
 ```
 chart text ──► Section ─► Sentence ─► PHI ─► Concept (+codes) ─► Negation ─► Measurement ──► JSON
@@ -23,13 +23,14 @@ chart text ──► Section ─► Sentence ─► PHI ─► Concept (+codes) 
 
 ## Quick start
 
-Needs **JDK 21** only (no Docker, no MySQL) for the first look:
+Needs **JDK 21** only (no Docker, no MySQL, no Node) for the first look:
 
 ```bat
 run.bat h2
 ```
 
-Then open <http://localhost:8080/swagger-ui.html>, or:
+Then open **<http://localhost:8080>**: the UI. (The first run also builds the UI, which takes a couple of minutes; Maven
+downloads its own Node for that.) API docs are at <http://localhost:8080/swagger-ui.html>, or use curl:
 
 ```bat
 curl -X POST "http://localhost:8080/api/v1/charts/analyze/text?redactPhi=true" ^
@@ -43,6 +44,21 @@ run.bat
 ```
 
 Full instructions, prerequisites and troubleshooting: **[SETUP.md](SETUP.md)** and **[docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md)**.
+
+## The web UI
+
+<http://localhost:8080> once the app is running.
+
+- **Edit a chart:** type or paste, load one of four samples, open a `.txt` file, or reopen a chart you saved. Saved charts live in *your browser only* (localStorage); nothing leaves it until you press Analyze. Optional *Analyze as I type*, and `Ctrl+Enter` to analyze.
+- **See the findings in place:** affirmed concepts green, **negated concepts red and struck through** (hover for the code and the trigger phrase), vitals / labs / doses underlined, PHI outlined, section headers as margin badges.
+- **Inspect the details:** tabs for concepts (filterable, with code, system, category, negation, section), measurements, PHI, sections, sentences, the PHI-redacted text, and raw JSON. Click a table row to jump to that finding in the chart.
+- **Know when it is stale:** editing after an analysis flags the results as out of date.
+- **Check and reload the rules:** the header shows what rules the backend runs, lists any that were rejected (with the reason), and reloads them from MySQL; the chart on screen is re-analyzed so a rule edit shows up immediately.
+- Errors from the backend (blank chart, too long, busy, offline) are shown in plain words.
+
+Rules are still edited in MySQL (see [SETUP.md](SETUP.md#5-change-the-rules-without-redeploying)); the UI checks and reloads them.
+
+UI development with live reload: `run.bat dev` (needs Node 20.19+).
 
 ### Example
 
@@ -90,7 +106,8 @@ type, `503` all engines busy or rules could not be reloaded.
 
 Java 21 · Spring Boot 3.5 · Maven (wrapper included) · **Apache UIMA 3.6** (JCas types generated from a type-system XML) +
 uimaFIT · MySQL 8.4 + Flyway + JPA · **Caffeine** cache · Aho-Corasick matcher · springdoc/Swagger UI · JUnit 5 + AssertJ ·
-Docker Compose. All open source. Details: [docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md).
+Docker Compose · **Angular 21** (standalone components, signals, Vitest) bundled into the jar by Maven. All open source.
+Details: [docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md).
 
 ## How it is built
 
@@ -105,11 +122,13 @@ Diagrams (component view, request flow, rule loading), the data model and the de
 ## Tests
 
 ```bat
-run.bat test
+run.bat test       rem backend
+run.bat uitest     rem Angular UI (needs Node 20.19+)
 ```
 
-144 automated tests (unit tests per annotator on the real UIMA pipeline, rule compiler, cache resilience, concurrency,
-large documents, and end-to-end HTTP tests on H2 in MySQL mode). Every use case and edge case has an ID and a named test:
+**144 backend tests** (unit tests per annotator on the real UIMA pipeline, rule compiler, cache resilience, concurrency,
+large documents, and end-to-end HTTP tests on H2 in MySQL mode) and **71 UI tests** (store, API client, highlighting
+engine, chart library, and whole flows through the component tree). Every use case and edge case has an ID and a named test:
 **[docs/USE_CASES.md](docs/USE_CASES.md)**.
 
 ## Project layout
@@ -125,14 +144,15 @@ src/main/resources
   desc/MedicalTypeSystem.xml      UIMA type system (JCas classes are generated from it)
   db/migration/V1__schema.sql     Flyway schema
   seed/medical-rules.json         initial rules, loaded only into empty tables
-samples/      example charts (also used as test fixtures)
+frontend/     Angular UI (built into the jar by `mvnw -Pui`; see frontend/README.md)
+samples/      example charts (test fixtures for the backend and the sample picker in the UI)
 docs/         ARCHITECTURE.md, INFRASTRUCTURE.md, USE_CASES.md
 run.bat  docker-compose.yml  SETUP.md
 ```
 
 ## Limitations (it is a demo)
 
-Negation is lexical (NegEx-style), family history is recognised only by section, there is no temporal/hypothetical
+The UI reads and reloads rules but does not edit them (use MySQL), and saved charts live in one browser only. Negation is lexical (NegEx-style), family history is recognised only by section, there is no temporal/hypothetical
 context, the vocabulary is a small **illustrative** subset (verify codes against official releases; SNOMED CT is excluded
 because it is licensed), PHI detection is heuristic and **not** HIPAA de-identification, and the admin endpoint has no
 authentication. The full list, each pinned by a test, is in [docs/USE_CASES.md](docs/USE_CASES.md#3-known-limitations-lim).

@@ -1,0 +1,44 @@
+<details class="rules">
+  <summary>
+    Rules
+    @if (store.rules(); as r) {
+      <span class="mini">{{ r.concepts }} concepts</span>
+      @if (r.rejected.length > 0) {
+        <span class="mini bad">{{ r.rejected.length }} rejected</span>
+      }
+    }
+  </summary>
+
+  <div class="body">
+    @if (store.rules(); as r) {
+      <dl>
+        <dt>Concepts</dt><dd>{{ r.concepts }} ({{ r.triggerTerms }} trigger terms)</dd>
+        <dt>Negation triggers</dt><dd>{{ r.negationTriggers }}</dd>
+        <dt>Regex rules</dt><dd>{{ r.regexRules }} (PHI and measurements)</dd>
+        <dt>Section headers</dt><dd>{{ r.sectionRules }}</dd>
+        <dt>Loaded</dt><dd>{{ r.loadedAt | date: 'medium' }}</dd>
+      </dl>
+
+      @if (r.rejected.length > 0) {
+        <p class="warn">These database rules were rejected and are not applied:</p>
+        <ul class="rejected">
+          @for (x of r.rejected; track x.kind + x.name) {
+            <li><b>{{ x.kind }}</b> {{ x.name }}<br /><small>{{ x.reason }}</small></li>
+          }
+        </ul>
+      }
+    } @else if (store.rulesError(); as err) {
+      <p class="warn" role="alert">{{ err }}</p>
+    } @else {
+      <p class="muted">Loading rules…</p>
+    }
+
+    <button type="button" class="btn" (click)="store.refreshRules()" [disabled]="store.rulesBusy()">
+      {{ store.rulesBusy() ? 'Reloading…' : 'Reload rules from MySQL' }}
+    </button>
+    <p class="muted hint">After editing the rule tables, reload here. If a chart is showing it is re-analyzed automatically.</p>
+    @if (store.rules() && store.rulesError(); as err) {
+      <p class="warn" role="alert">{{ err }}</p>
+    }
+  </div>
+</details>

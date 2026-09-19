@@ -47,6 +47,30 @@ and calling a refresh endpoint, with no redeploy.
         negation_trigger · processing_run (audit: counts only, no text)
 ```
 
+### 2a. Web UI
+
+```
+ Browser  ──────────────  Angular 21 single-page app (frontend/, built into the jar → /static)
+   │                        ┌────────────────────────────────────────────────────────┐
+   │  http://localhost:8080 │ App shell: backend status · Rules panel                │
+   │                        │ ChartEditor ─┐        ┌─ Results (tabs)                 │
+   │                        │  edit/load/  │        │  Highlighted · Concepts · …     │
+   │                        │  save        ▼        ▲                                 │
+   │                        │            AnalysisStore  (signals: text, response,    │
+   │                        │              │   analyzedText, stale, error, rules)    │
+   │                        │   SavedChartsService      ChartApi (HttpClient)         │
+   │                        │   (localStorage only)         │                         │
+   │                        └───────────────────────────────┼─────────────────────────┘
+   └──── same origin ─────────────────────────────────────►  /api/v1/*  (Spring Boot)
+```
+
+- **One origin.** Maven (`-Pui`) builds the Angular app and copies it into `target/classes/static`, so Spring Boot serves the UI and the API from port 8080: no CORS, one process, one jar. In development (`run.bat dev`) the Angular dev server proxies `/api` to the backend.
+- **State in one store.** `AnalysisStore` owns the chart text, the latest response, and the *exact text that response belongs to* (`analyzedText`). Highlights are always drawn from `analyzedText`, never from the live editor text, so offsets can never drift while you type; `stale` tells you the two differ.
+- **Requests cannot arrive out of order.** Starting a new analysis unsubscribes the old request (the browser cancels it), so a slow earlier response can never overwrite a newer one.
+- **Highlighting is a pure function** (`highlight.ts`): it cuts the text at every annotation boundary and lists which annotations cover each piece, so overlapping findings (a concept inside a measurement) are painted together. The server's offsets are UTF-16 indexes, the same as JavaScript string indexes, so emoji and accents line up.
+- **Saved charts never touch the server.** They live in `localStorage`; every storage access is guarded (blocked, full, corrupt, or an insecure origin without `crypto.randomUUID`).
+- **Bounded rendering.** The annotated view is capped at 150,000 characters (thousands of DOM nodes would freeze the page); the tables have no such limit.
+
 ## 3. Request flow
 
 ```mermaid
@@ -147,10 +171,22 @@ from `seed/medical-rules.json`; tables that already have rows are never touched,
 | Cache | Caffeine |
 | Term matching | Aho-Corasick (`org.ahocorasick:ahocorasick`) |
 | API docs / ops | springdoc-openapi (Swagger UI), Spring Boot Actuator |
-| Tests | JUnit 5, AssertJ, MockMvc; H2 in MySQL mode |
+| Web UI | Angular 21 (standalone components, signals, zoneless), built into the jar by `frontend-maven-plugin` with a Maven-managed Node |
+| Tests | JUnit 5, AssertJ, MockMvc; H2 in MySQL mode. UI: Vitest + jsdom |
 | Local infra | Docker Compose (MySQL) or an in-memory H2 profile |
 
 Everything above is open source / free.
+
+### UI-specific decisions
+
+| Decision | Why |
+|----------|-----|
+| **UI inside the Spring Boot jar** (opt-in `-Pui`) | One artifact, one origin (no CORS), one command. Kept opt-in so `mvn test` stays fast and offline; `run.bat` turns it on. |
+| **Maven-managed Node** | Running the app needs no Node installation. System Node is only needed for UI development. |
+| **Angular 21, not 22** | Angular 22 needs Node 22.22+; 21 runs on Node 20.19+, which more machines have. |
+| **Samples come from `samples/`** | One copy of each chart feeds the backend tests, the docs and the UI picker (`scripts/copy-samples.mjs`, because Angular cannot bundle files outside its workspace). |
+| **UI reads and reloads rules but does not edit them** | Rule editing needs authenticated write endpoints, validation UX and audit, which is a different feature; SQL plus the refresh button covers the demo. |
+| **Always request PHI redaction and sentences** | They are cheap and give the Redacted / Sentences tabs without options to explain. |
 
 ## 9. Known limitations
 

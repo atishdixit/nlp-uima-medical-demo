@@ -9,13 +9,16 @@ Step-by-step instructions are in [SETUP.md](../SETUP.md).
 |-------------|---------|------------|-----------|
 | **JDK** | **21 or newer** (Temurin, Oracle, Corretto …) | Compile and run | Yes |
 | **Maven** | 3.9+ | Build | **No**: the project ships the Maven Wrapper (`mvnw.cmd`), which downloads Maven 3.9.11 on first use. A system Maven is used only if the wrapper is missing. |
+| **Node.js** | 20.19+ or 22.12+ (Angular 21) | UI development (`run.bat dev`, `run.bat uitest`) | **No** for running the app: Maven downloads its own Node (v22.14.0) into `frontend/node` to build the UI |
 | **Database** | MySQL 8.x (8.4 LTS used here) | Persistent rule store | Yes for `run.bat`, **no** for `run.bat h2` and for the tests |
 | **Docker Desktop** (with Compose v2) | 4.x+ | Easiest way to get MySQL | Optional: you can install MySQL natively instead |
 | **Git** | 2.x | Clone / push | Optional |
 | **curl** | any (ships with Windows 10+) | Try the API | Optional: Swagger UI works without it |
 | Internet access | | First build (Maven Central), first `docker compose up` (Docker Hub) | Yes, once. Afterwards the app runs offline. |
 
-Verified on: Windows 11, JDK 21.0.10, Maven 3.9.14, Docker 29.3.1, MySQL 8.4 (container).
+Verified on: Windows 11, JDK 21.0.10, Maven 3.9.14, Node 20.20.2 (system) and 22.14.0 (Maven-managed), Docker 29.3.1, MySQL 8.4 (container).
+
+> **Why Angular 21 and not 22?** Angular 22 requires Node 22.22+/24; Angular 21 supports Node 20.19+, which is what many machines have. Upgrading later is a `frontend/package.json` change plus `frontend.node.version` in `pom.xml`.
 
 ### Hardware
 
@@ -29,7 +32,8 @@ Verified on: Windows 11, JDK 21.0.10, Maven 3.9.14, Docker 29.3.1, MySQL 8.4 (co
 
 | Port | Used by | Change with |
 |------|---------|-------------|
-| 8080 | The application (REST, Swagger UI, actuator) | `SERVER_PORT` |
+| 8080 | The application: **UI**, REST, Swagger UI, actuator | `SERVER_PORT` |
+| 4200 | Angular dev server (`run.bat dev` only) | `npm start -- --port <n>` |
 | 3306 | MySQL (host side of the container mapping) | `MYSQL_PORT` (set it *before* both `run.bat` and the app) |
 
 **Port 3306 is often already taken** by a native MySQL Windows service. If so, run `set MYSQL_PORT=3307` first: `run.bat` and the application both honour it.
@@ -49,6 +53,9 @@ Verified on: Windows 11, JDK 21.0.10, Maven 3.9.14, Docker 29.3.1, MySQL 8.4 (co
 | Cache | **Caffeine** | In-process cache of the compiled rule set, refresh-after-write | Apache 2.0 |
 | Term matching | `org.ahocorasick:ahocorasick` | Aho-Corasick multi-term matcher | Apache 2.0 |
 | API docs | springdoc-openapi | OpenAPI + Swagger UI | Apache 2.0 |
+| **Web UI** | **Angular 21** (standalone components, signals, zoneless), TypeScript 5.9, RxJS | Chart editor, annotated results, tables, rules panel | MIT |
+| UI build | Angular CLI / `@angular/build` (esbuild), `frontend-maven-plugin` 1.15 | Builds the UI inside the Maven build with a Maven-managed Node | MIT / Apache 2.0 |
+| UI tests | Vitest 4 + jsdom via `ng test` | Store, API client, highlighting and component-flow tests | MIT |
 | Tests | JUnit 5, AssertJ, Spring Test (MockMvc) | Unit, pipeline and end-to-end tests | EPL 2.0 / Apache 2.0 |
 | Test/demo database | H2 (MySQL compatibility mode) | `run.bat h2` and all automated tests: no install needed | MPL 2.0 / EPL 1.0 |
 | Containers | Docker Compose | Local MySQL | Apache 2.0 (Compose); see note below |
@@ -59,8 +66,8 @@ Everything the application depends on is free and open source. **Note:** Docker 
 
 | Tool | Purpose |
 |------|---------|
-| `mvnw.cmd` / `mvn` | Compile (including JCas generation), test, package, run |
-| `run.bat` | One-command launcher: checks Java and Docker, starts MySQL, waits until it is healthy, runs the app |
+| `mvnw.cmd` / `mvn` | Compile (including JCas generation), test, package, run. `-Pui` also builds the Angular UI and copies it into `target/classes/static`, so the jar serves UI + API |
+| `run.bat` | One-command launcher: checks Java and Docker, starts MySQL, waits until it is healthy, builds and runs the app with the UI; also `dev`, `uitest`, `test` |
 | `docker-compose.yml` | Defines the `mysql:8.4` service, a named volume and a health check |
 
 Generated code: `target/generated-sources/jcasgen/com/example/mednlp/types/*.java`. In an IDE, import the project as a Maven project (or run `mvnw.cmd generate-sources` once) so those classes resolve.
@@ -97,6 +104,7 @@ Profiles: `h2` → in-memory H2 database, no external services.
 ## 5. Security and data handling
 
 - Chart text is processed in memory only: it is **not stored**, **not logged**, and **not echoed in error responses**. The audit table stores counts and timings.
+- The UI's "Save" keeps charts in the browser's `localStorage` (unencrypted, per browser profile). Charts saved there can contain PHI, so do not use the save feature with real patient data on a shared computer. The UI never uploads saved charts; only Analyze sends text to the API.
 - The demo has **no authentication**. `/api/v1/admin/rules/refresh` and the rule tables are unprotected; add Spring Security or a gateway before exposing the service.
 - The MySQL credentials in `docker-compose.yml` are for local demo use only.
 - PHI detection is heuristic and is **not** a HIPAA de-identification tool.

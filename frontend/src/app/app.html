@@ -1,0 +1,25 @@
+<header class="top">
+  <div class="brand">
+    <h1>Medical Chart NLP</h1>
+    <p>Apache UIMA pipeline: edit a chart, analyze it, inspect what was found</p>
+  </div>
+  <div class="top-right">
+    @switch (store.backendUp()) {
+      @case (true) {
+        <span class="pill up" role="status">Backend connected</span>
+      }
+      @case (false) {
+        <button type="button" class="pill down" (click)="store.loadRules()" title="Try again">Backend offline. Retry</button>
+      }
+      @default {
+        <span class="pill" role="status">Connecting…</span>
+      }
+    }
+    <app-rules-panel />
+  </div>
+</header>
+
+<main class="layout">
+  <app-chart-editor />
+  <app-results />
+</main>

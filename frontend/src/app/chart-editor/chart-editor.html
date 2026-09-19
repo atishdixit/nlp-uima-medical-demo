@@ -1,0 +1,78 @@
+<section class="panel" aria-labelledby="editor-title">
+  <header class="panel-head">
+    <h2 id="editor-title">Chart</h2>
+    <div class="loaders">
+      <label class="sr-only" for="sample-select">Load a sample chart</label>
+      <select id="sample-select" (change)="onSample($event)">
+        <option value="">Load a sample…</option>
+        @for (s of samples; track s.file) {
+          <option [value]="s.file">{{ s.label }}</option>
+        }
+      </select>
+
+      <label class="sr-only" for="saved-select">Open one of your saved charts</label>
+      <select id="saved-select" (change)="onOpenSaved($event)" [disabled]="library.charts().length === 0">
+        <option value="">{{ library.charts().length ? 'My charts (' + library.charts().length + ')…' : 'No saved charts' }}</option>
+        @for (c of library.charts(); track c.id) {
+          <option [value]="c.id">{{ c.name }}</option>
+        }
+      </select>
+
+      <label class="btn secondary file-btn">
+        Open .txt
+        <input type="file" accept=".txt,text/plain" (change)="onFile($event)" />
+      </label>
+    </div>
+  </header>
+
+  <label class="sr-only" for="chart-text">Chart text</label>
+  <textarea
+    id="chart-text"
+    class="chart-text"
+    spellcheck="false"
+    placeholder="Paste or type a medical chart here, or load a sample above.&#10;&#10;Try:  Patient denies fever but reports cough. BP 120/80."
+    [value]="store.text()"
+    (input)="onInput($event)"
+    (keydown.control.enter)="store.analyze()"
+    (keydown.meta.enter)="store.analyze()"
+  ></textarea>
+
+  <div class="status-row">
+    <span [class.over]="store.tooLarge()" aria-live="polite">{{ charCount() | number }} / {{ maxCount | number }} characters</span>
+    @if (store.tooLarge()) {
+      <span class="over">Too long, the server would reject this chart.</span>
+    }
+    @if (store.stale()) {
+      <span class="stale">Results are out of date</span>
+    }
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn primary" (click)="store.analyze()" [disabled]="!store.canAnalyze()">
+      {{ store.loading() ? 'Analyzing…' : 'Analyze' }}
+    </button>
+    <label class="check">
+      <input type="checkbox" [checked]="store.autoAnalyze()" (change)="onAuto($event)" />
+      Analyze as I type
+    </label>
+    <span class="hint">Ctrl+Enter</span>
+    <button type="button" class="btn secondary push" (click)="clear()" [disabled]="!store.text()">Clear</button>
+  </div>
+
+  <fieldset class="save">
+    <legend>Save in this browser</legend>
+    <label class="sr-only" for="chart-name">Chart name</label>
+    <input id="chart-name" type="text" placeholder="Chart name" [value]="chartName()" (input)="onName($event)" />
+    <button type="button" class="btn secondary" (click)="save()" [disabled]="!store.text().trim()">
+      {{ current() ? (dirty() ? 'Update (unsaved changes)' : 'Update') : 'Save' }}
+    </button>
+    @if (current()) {
+      <button type="button" class="btn secondary" (click)="saveAsNew()">Save as new</button>
+      <button type="button" class="btn danger" (click)="deleteCurrent()">Delete</button>
+    }
+    <p class="privacy">Saved charts stay in this browser only (localStorage). They are never sent to the server unless you click Analyze.</p>
+    @if (notice()) {
+      <p class="notice" role="status">{{ notice() }}</p>
+    }
+  </fieldset>
+</section>

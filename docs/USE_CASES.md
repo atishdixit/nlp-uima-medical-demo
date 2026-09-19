@@ -3,7 +3,8 @@
 Reference catalog of what the service is expected to do, how it behaves at the edges, and **which automated test proves it**.
 Every ID below appears in the test sources, so `grep -r "EC-15" src/test` finds the proof.
 
-- Run everything: `run.bat test` (or `mvnw.cmd test`). 144 tests, no database or Docker needed (H2 in MySQL mode).
+- Backend: `run.bat test` (or `mvnw.cmd test`). 144 tests, no database or Docker needed (H2 in MySQL mode).
+- UI: `run.bat uitest` (needs Node 20.19+). 71 tests (Vitest); see [section 4](#4-ui-use-cases-angular) for the UI use cases.
 - Sample charts live in [`samples/`](../samples) and are also used as test fixtures.
 - Test names are `Class#method`; all classes are under `src/test/java/com/example/mednlp/`.
 
@@ -124,8 +125,43 @@ unauthenticated admin endpoint, per-instance cache).
 
 ---
 
-## 4. Adding a new case
+## 4. UI use cases (Angular)
 
-1. Add the behaviour to a test, prefixed with the next free `UC-`/`EC-` ID in a Javadoc comment.
+The UI (`frontend/`) is exercised in two ways: Vitest specs drive the real component tree with a mocked HTTP backend
+(`app.spec.ts` for whole flows, the others for units), and the finished app was also checked by hand in a browser against the real
+backend. Spec files are under `frontend/src/app/`.
+
+| ID | Use case | Expected behaviour | Proven by |
+|----|----------|--------------------|-----------|
+| UI-01 | Edit a chart and analyze it | Analyze is disabled for empty text; the request is sent with redaction and sentences switched on; the summary shows counts and timing | `app.spec.ts` (`starts with an empty editor…`, `enables Analyze once there is text…`, `analyzes the chart and shows the summary…`), `analysis.store.spec.ts` (`sends the chart with redaction and sentences…`) |
+| UI-02 | See findings in place | Affirmed concepts green, negated concepts red and struck through with the trigger in the tooltip, measurements underlined, PHI outlined, section headers as margin badges; overlaps (a concept inside a measurement) are painted together | `highlight.spec.ts`, `app.spec.ts#analyzes the chart and shows the summary and the highlighted findings` |
+| UI-03 | Inspect findings as tables | Concepts (code, system, status, trigger, section, about), measurements, PHI text, sections, sentences, redacted text and raw JSON, each with a friendly empty state; concepts can be filtered by status and free text | `app.spec.ts` (`lists concepts in a table…`, `filters the concept table…`, `shows measurements, and friendly empty states…`, `shows the PHI text found and the redacted copy`, `shows the raw JSON`) |
+| UI-04 | Jump from a table row to the chart | The row's finding is selected in the annotated chart and scrolled into view | `app.spec.ts#jumps to the chart and marks the finding…` |
+| UI-05 | Know when results are out of date | Editing after an analysis shows a warning; the highlights keep matching the text that was analysed; re-analyzing clears it | `analysis.store.spec.ts#marks the results stale…`, `app.spec.ts#warns that the results are stale…` |
+| UI-06 | Analyze as I type | Off by default; a burst of typing produces one request after a 700 ms pause; nothing is sent for blank text or text already analysed | `analysis.store.spec.ts` (`analyze as I type`) |
+| UI-07 | Keep my own charts | Save, update, save-as-new, open and delete charts in the browser's localStorage; nothing is sent to the server | `saved-charts.service.spec.ts`, `app.spec.ts#saves a chart in this browser, lists it, and can delete it again` |
+| UI-08 | Load a chart from a sample or a file | Four bundled samples (the repository's `samples/` folder, so the UI, tests and docs share one copy); Windows line endings are normalised | `api.service.spec.ts` (`fetches sample charts as text`), `analysis.store.spec.ts` (`samples and clearing`), `app.spec.ts#loads a sample chart into the editor` |
+| UI-09 | Understand failures | The backend's problem+json message is shown for 400 / 413 / 503; an unreachable backend says so and the header offers Retry; previous results are kept when a re-run fails | `api.service.spec.ts` (`describeError`), `analysis.store.spec.ts`, `app.spec.ts` (`shows the server error message…`, `offers a retry when the backend is offline`) |
+| UI-10 | Check and reload rules | The header shows rule counts and rejected rules with reasons; "Reload rules from MySQL" re-reads the tables and re-analyzes the chart on screen so a rule edit is visible at once | `analysis.store.spec.ts` (`rules`), `app.spec.ts#lists rejected rules in the rules panel…`, `#shows a rejected-rules warning…` |
+
+| ID | UI edge case | Expected behaviour | Proven by |
+|----|--------------|--------------------|-----------|
+| UI-E1 | Chart over the 1,000,000-character limit | Flagged in the editor; Analyze disabled; no request | `app.spec.ts#flags a chart that is longer than the server limit`, `analysis.store.spec.ts#does not call the server…` |
+| UI-E2 | Two analyses in flight | The older request is cancelled, so an old response can never overwrite a newer one | `analysis.store.spec.ts#cancels an older request…` |
+| UI-E3 | Emoji / surrogate pairs | Server offsets (UTF-16) line up with JavaScript string indexes, so highlights land on the right text | `highlight.spec.ts#keeps offsets correct after emoji…` |
+| UI-E4 | Response no longer matches the text, or spans outside it | Highlighting degrades (clamps) instead of throwing | `highlight.spec.ts` (`clamps spans…`, `degrades gracefully…`) |
+| UI-E5 | localStorage blocked, full, corrupt or from another version | The UI keeps working in memory; bad entries are ignored | `saved-charts.service.spec.ts` |
+| UI-E6 | Opened over a LAN IP (insecure origin, no `crypto.randomUUID`) | Saving still works (fallback id) | `saved-charts.service.spec.ts#does not need crypto.randomUUID…` |
+| UI-E7 | Very large chart (over 150,000 characters) | The annotated view is replaced by a hint to use the tables (thousands of DOM nodes would freeze the page) | `app.spec.ts#replaces the annotated view by a hint for very large charts…` |
+| UI-E8 | Machine locale (e.g. en-IN grouping `10,00,000`) | Numbers use a fixed locale so the UI is the same everywhere | `app.spec.ts#enables Analyze once there is text and shows the character count` |
+
+UI limitations: rule tables can be *checked and reloaded* from the UI but not edited there (edit them in MySQL, then use
+"Reload rules"); saved charts live in one browser only; the annotated view is capped at 150,000 characters.
+
+---
+
+## 5. Adding a new case
+
+1. Add the behaviour to a test, prefixed with the next free `UC-`/`EC-`/`UI-` ID in a comment.
 2. Add a row here with the test name.
-3. If it needs a chart, put it in `samples/` (it is copied to the test classpath automatically).
+3. If it needs a chart, put it in `samples/` (it is copied to the test classpath and to the UI automatically).

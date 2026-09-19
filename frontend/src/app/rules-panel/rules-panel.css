@@ -1,0 +1,96 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+summary {
+  cursor: pointer;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  list-style: none;
+  user-select: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.mini {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.mini.bad {
+  color: var(--neg);
+  font-weight: 700;
+}
+
+.body {
+  position: absolute;
+  right: 0;
+  z-index: 10;
+  width: min(360px, 90vw);
+  margin-top: 6px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+}
+
+.rejected {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 0.84rem;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.warn {
+  color: var(--neg);
+  font-size: 0.86rem;
+  margin: 6px 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.hint {
+  font-size: 0.78rem;
+  margin: 8px 0 0;
+}
+
+.btn {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

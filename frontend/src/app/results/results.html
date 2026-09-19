@@ -1,0 +1,187 @@
+<section class="panel" aria-labelledby="results-title" [attr.aria-busy]="store.loading()">
+  <header class="panel-head">
+    <h2 id="results-title">Results</h2>
+    @if (store.loading()) {
+      <span class="spinner" role="status">Analyzing…</span>
+    }
+  </header>
+
+  @if (store.error(); as message) {
+    <div class="banner error" role="alert">{{ message }}</div>
+  }
+
+  @if (store.response(); as r) {
+    <div class="summary">
+      <span class="stat"><b>{{ r.concepts.length }}</b> concepts</span>
+      <span class="stat neg"><b>{{ negatedCount() }}</b> negated</span>
+      <span class="stat"><b>{{ r.measurements.length }}</b> measurements</span>
+      <span class="stat"><b>{{ r.phi.length }}</b> PHI</span>
+      <span class="stat"><b>{{ r.sections.length }}</b> sections</span>
+      <span class="stat"><b>{{ r.sentenceCount }}</b> sentences</span>
+      <span class="stat muted">{{ r.stats.durationMs }} ms · {{ r.textLength | number }} chars</span>
+    </div>
+
+    @if (store.stale()) {
+      <div class="banner warn">The chart was edited after this analysis. Press Analyze to refresh the results.</div>
+    }
+    @if (r.stats.rulesRejected > 0) {
+      <div class="banner warn">{{ r.stats.rulesRejected }} rule(s) in the database were rejected and are not being applied. See "Rules" above.</div>
+    }
+
+    <div class="tabs" role="tablist">
+      @for (t of tabs(); track t.id) {
+        <button type="button" role="tab" [attr.aria-selected]="tab() === t.id" [class.active]="tab() === t.id" (click)="tab.set(t.id)">
+          {{ t.label }}@if (t.count !== undefined) {<span class="count">{{ t.count }}</span>}
+        </button>
+      }
+    </div>
+
+    <div class="tab-body" role="tabpanel">
+      @switch (tab()) {
+        @case ('highlight') {
+          <app-highlighted-chart />
+        }
+
+        @case ('concepts') {
+          <div class="toolbar">
+            <input type="search" placeholder="Filter by text, code, section…" [value]="query()" (input)="setQuery($event)" aria-label="Filter concepts" />
+            <select [value]="conceptFilter()" (change)="setFilter($event)" aria-label="Show">
+              <option value="all">All</option>
+              <option value="affirmed">Affirmed only</option>
+              <option value="negated">Negated only</option>
+            </select>
+          </div>
+          @if (conceptRows().length === 0) {
+            <p class="empty">{{ r.concepts.length === 0 ? 'No concepts were found in this chart.' : 'No concepts match the filter.' }}</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Text</th><th>Code</th><th>System</th><th>Category</th><th>Status</th><th>Section</th><th>About</th></tr>
+                </thead>
+                <tbody>
+                  @for (row of conceptRows(); track row.id) {
+                    <tr class="clickable" [class.picked]="store.selectedId() === row.id" tabindex="0" (click)="reveal(row.id)" (keydown.enter)="reveal(row.id)">
+                      <td>{{ row.concept.text }}</td>
+                      <td><code>{{ row.concept.code }}</code></td>
+                      <td>{{ row.concept.codeSystem }}</td>
+                      <td>{{ row.concept.category }}</td>
+                      <td>
+                        @if (row.concept.negated) {
+                          <span class="badge neg">Negated</span> <small>by “{{ row.concept.negationTrigger }}”</small>
+                        } @else {
+                          <span class="badge pos">Affirmed</span>
+                        }
+                      </td>
+                      <td>{{ row.concept.section }}</td>
+                      <td>{{ row.concept.experiencer }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        @case ('measurements') {
+          @if (measurementRows().length === 0) {
+            <p class="empty">No vitals, lab values or dosages were found.</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Type</th><th>Value</th><th>Unit</th><th>Matched text</th><th>Rule</th></tr></thead>
+                <tbody>
+                  @for (row of measurementRows(); track row.id) {
+                    <tr class="clickable" [class.picked]="store.selectedId() === row.id" tabindex="0" (click)="reveal(row.id)" (keydown.enter)="reveal(row.id)">
+                      <td>{{ row.m.type }}</td>
+                      <td><b>{{ row.m.value }}</b></td>
+                      <td>{{ row.m.unit ?? '' }}</td>
+                      <td><code>{{ row.m.text }}</code></td>
+                      <td><small>{{ row.m.rule }}</small></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        @case ('phi') {
+          @if (phiRows().length === 0) {
+            <p class="empty">No protected health information was detected.</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Type</th><th>Text</th><th>Position</th></tr></thead>
+                <tbody>
+                  @for (row of phiRows(); track row.id) {
+                    <tr class="clickable" [class.picked]="store.selectedId() === row.id" tabindex="0" (click)="reveal(row.id)" (keydown.enter)="reveal(row.id)">
+                      <td><span class="badge phi">{{ row.p.type }}</span></td>
+                      <td><code>{{ row.text }}</code></td>
+                      <td>{{ row.p.begin }}–{{ row.p.end }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        @case ('sections') {
+          @if (r.sections.length === 0) {
+            <p class="empty">No section headers were found (e.g. “HPI:”, “Plan:”).</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Section</th><th>About</th><th>Position</th><th>Length</th></tr></thead>
+                <tbody>
+                  @for (s of r.sections; track s.begin) {
+                    <tr>
+                      <td><b>{{ s.name }}</b></td>
+                      <td>{{ s.experiencer }}</td>
+                      <td>{{ s.begin }}–{{ s.end }}</td>
+                      <td>{{ s.end - s.begin }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        @case ('sentences') {
+          @if (!r.sentences || r.sentences.length === 0) {
+            <p class="empty">No sentences.</p>
+          } @else {
+            <ol class="sentences">
+              @for (s of r.sentences; track s.begin) {
+                <li><small class="muted">{{ s.begin }}–{{ s.end }}</small> {{ s.text }}</li>
+              }
+            </ol>
+          }
+        }
+
+        @case ('redacted') {
+          <div class="toolbar">
+            <button type="button" class="btn secondary" (click)="copy(r.redactedText ?? '')">{{ copied() ? 'Copied' : 'Copy' }}</button>
+            <span class="muted">PHI replaced by [TYPE] placeholders</span>
+          </div>
+          <pre class="plain">{{ r.redactedText }}</pre>
+        }
+
+        @case ('json') {
+          <div class="toolbar">
+            <button type="button" class="btn secondary" (click)="copy(json())">{{ copied() ? 'Copied' : 'Copy JSON' }}</button>
+          </div>
+          <pre class="plain">{{ json() }}</pre>
+        }
+      }
+    </div>
+  } @else if (!store.error()) {
+    <div class="placeholder">
+      <p><b>No results yet.</b></p>
+      <p>Paste a chart on the left (or load a sample) and press <b>Analyze</b>. Findings are highlighted in the chart and listed in tables:
+        concepts with their vocabulary codes, negation, vitals / labs / dosages, PHI and sections.</p>
+    </div>
+  }
+</section>

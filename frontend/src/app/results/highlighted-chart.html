@@ -1,0 +1,13 @@
+<div class="legend" aria-label="Legend">
+  <span class="chip concept-aff">Concept</span>
+  <span class="chip concept-neg">Negated concept</span>
+  <span class="chip measurement">Vital / lab / dose</span>
+  <span class="chip phi">PHI</span>
+  <span class="chip section">SECTION</span>
+</div>
+
+@if (tooBig()) {
+  <p class="empty">This chart is too large to highlight in the browser. Use the tables instead.</p>
+} @else {
+  <pre class="chart" tabindex="0" aria-label="Analysed chart with highlighted findings">@for (seg of segments(); track $index) {@for (name of seg.sectionStarts; track name) {<span class="section-badge">{{ name }}</span>}<span [class]="classes(seg)" [attr.title]="title(seg)">{{ seg.text }}</span>}</pre>
+}
