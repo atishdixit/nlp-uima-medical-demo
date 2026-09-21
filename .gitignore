@@ -1,0 +1,13 @@
+target/
+logs/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Working folders: your documents never belong in git. Only the folders themselves are kept (.gitkeep).
+input_document/*
+output_document/*
+!input_document/.gitkeep
+!output_document/.gitkeep
+!input_document/sample_scanned_chart.pdf
